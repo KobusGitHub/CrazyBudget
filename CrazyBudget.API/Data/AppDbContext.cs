@@ -1,3 +1,4 @@
+using CrazyBudget.API.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrazyBudget.API.Data
@@ -9,6 +10,6 @@ namespace CrazyBudget.API.Data
         }
 
         // Add DbSets here, e.g.
-        // public DbSet<WeatherForecast> WeatherForecasts { get; set; }
+        public DbSet<Config> Configs { get; set; }
     }
 }
