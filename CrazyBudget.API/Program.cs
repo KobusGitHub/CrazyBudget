@@ -14,8 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-// Register EF Core DbContext
-builder.Services.AddDbContext<CrazyBudget.API.Data.AppDbContext>(options =>
+// Register EF Core DbContext and expose it via the IAppDbContext interface
+builder.Services.AddDbContext<IAppDbContext, CrazyBudget.API.Data.AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlServerOptionsAction: sqlOptions =>
         {
@@ -23,8 +23,9 @@ builder.Services.AddDbContext<CrazyBudget.API.Data.AppDbContext>(options =>
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(10),
                 errorNumbersToAdd: null);
-        }));
-builder.Services.AddScoped<IAppDbContext>(provider => provider.GetService<CrazyBudget.API.Data.AppDbContext>());
+        })
+    // Enable sensitive data logging only in development
+    .EnableSensitiveDataLogging(builder.Environment.IsDevelopment()));
 builder.Services.AddScoped<ICreateUserService, CreateUserService>();
 builder.Services.AddScoped<IGetUserService, GetUserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -36,8 +37,18 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 
 // Configure JWT
-var jwtIssuerOptions = builder.Configuration.GetSection(nameof(JwtIssuerOptions)).Get<JwtIssuerOptions>();
-SymmetricSecurityKey signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtIssuerOptions.SecretKey));
+var jwtSection = builder.Configuration.GetSection("JwtIssuerOptions");
+var jwtIssuerOptions = jwtSection.Get<JwtIssuerOptions>() ?? throw new InvalidOperationException("Configuration section 'JwtIssuerOptions' is missing or invalid.");
+if (string.IsNullOrEmpty(jwtIssuerOptions.SecretKey)) throw new InvalidOperationException("JwtIssuerOptions.SecretKey is not configured.");
+SymmetricSecurityKey signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtIssuerOptions.SecretKey));
+
+// Bind JwtIssuerOptions and set the computed SigningCredentials so services can inject IOptions<JwtIssuerOptions>
+builder.Services.Configure<JwtIssuerOptions>(options =>
+{
+    jwtSection.Bind(options);
+    options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+});
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,13 +56,19 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(cfg =>
 {
-    cfg.RequireHttpsMetadata = false;
+    // Require HTTPS in non-development environments
+    cfg.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     cfg.SaveToken = true;
     cfg.TokenValidationParameters = new TokenValidationParameters()
     {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = signingKey,
+        ValidateIssuer = !string.IsNullOrEmpty(jwtIssuerOptions.Issuer),
         ValidIssuer = jwtIssuerOptions.Issuer,
+        ValidateAudience = !string.IsNullOrEmpty(jwtIssuerOptions.Audience),
         ValidAudience = jwtIssuerOptions.Audience,
-        IssuerSigningKey = signingKey
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(2)
     };
 
     cfg.Events = new JwtBearerEvents
@@ -70,13 +87,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.Configure<JwtIssuerOptions>(options =>
-{
-    options.Issuer = jwtIssuerOptions.Issuer;
-    options.Audience = jwtIssuerOptions.Audience;
-    options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-});
-
 
 
 
@@ -85,8 +95,7 @@ builder.Services.Configure<JwtIssuerOptions>(options =>
 // Register encryptor implementation for dependency injection
 builder.Services.AddSingleton<IEncryptor, Encrypter>();
 
-// Configure JwtIssuerOptions from configuration
-builder.Services.Configure<JwtIssuerOptions>(builder.Configuration.GetSection("JwtIssuerOptions"));
+// JwtIssuerOptions already configured above (bound and SigningCredentials set)
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection("AuthOptions"));
 
 
