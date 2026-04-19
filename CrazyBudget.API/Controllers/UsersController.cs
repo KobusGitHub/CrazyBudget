@@ -3,6 +3,7 @@ using CrazyBudget.API.Entities;
 using CrazyBudget.API.Interfaces;
 using CrazyBudget.API.Models.Users;
 using CrazyBudget.API.Services.Auth;
+using CrazyBudget.API.Services.Common;
 using CrazyBudget.API.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -20,13 +21,16 @@ public class UsersController : ControllerBase
     private readonly ICreateUserService createUserService;
     private readonly IGetUserService getUserService;
     private readonly IAuthenticateUserService authenticateUserService;
+    private readonly ICommsService commsService;
 
-    public UsersController(IAppDbContext appDbContext, ICreateUserService createUserService, IGetUserService getUserService, IAuthenticateUserService authenticateUserService)
+    public UsersController(IAppDbContext appDbContext, ICreateUserService createUserService, IGetUserService getUserService, IAuthenticateUserService authenticateUserService,
+       ICommsService commsService)
     {
         this.appDbContext = appDbContext;
         this.createUserService = createUserService;
         this.getUserService = getUserService;
         this.authenticateUserService = authenticateUserService;
+        this.commsService = commsService;
     }
 
     [HttpPost]
@@ -58,5 +62,16 @@ public class UsersController : ControllerBase
         var itm = await this.authenticateUserService.AuthenticateUser(model);
 
         return Ok(itm);
+    }
+
+    [HttpPost("SendMail")]
+    [Produces(typeof(IssuedTokenModel))]
+    [AllowAnonymous]
+    public async Task<ActionResult<IssuedTokenModel>> SendMail(CommsModel model)
+    {
+
+        await this.commsService.SendEmail(model);
+
+        return Ok();
     }
 }
