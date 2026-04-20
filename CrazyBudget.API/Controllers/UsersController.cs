@@ -22,15 +22,17 @@ public class UsersController : ControllerBase
     private readonly IGetUserService getUserService;
     private readonly IAuthenticateUserService authenticateUserService;
     private readonly ICommsService commsService;
+    private readonly IResetPasswordService resetPasswordService;
 
     public UsersController(IAppDbContext appDbContext, ICreateUserService createUserService, IGetUserService getUserService, IAuthenticateUserService authenticateUserService,
-       ICommsService commsService)
+       ICommsService commsService, IResetPasswordService resetPasswordService)
     {
         this.appDbContext = appDbContext;
         this.createUserService = createUserService;
         this.getUserService = getUserService;
         this.authenticateUserService = authenticateUserService;
         this.commsService = commsService;
+        this.resetPasswordService = resetPasswordService;
     }
 
     [HttpPost]
@@ -66,11 +68,21 @@ public class UsersController : ControllerBase
 
     [HttpPost("SendMail")]
     [Produces(typeof(IssuedTokenModel))]
-    [AllowAnonymous]
     public async Task<ActionResult<IssuedTokenModel>> SendMail(CommsModel model)
     {
 
         await this.commsService.SendEmail(model);
+
+        return Ok();
+    }
+
+    [HttpPost("ResetPassword")]
+    [Produces(typeof(IssuedTokenModel))]
+    [AllowAnonymous]
+    public async Task<ActionResult<IssuedTokenModel>> ResetPassword(ResetPasswordModel model)
+    {
+
+        await this.resetPasswordService.ResetPassword(model);
 
         return Ok();
     }

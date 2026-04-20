@@ -15,6 +15,11 @@ public class CommsService: ICommsService
     }
     public async Task SendEmail(CommsModel model)
     {
+
+        if (string.IsNullOrEmpty(model.Message))
+        {
+            throw new ArgumentException("Message can not be empty");
+        }
         var configs = await dbContext.Configs.ToListAsync();
 
         // helper to safely retrieve a single config value and provide clear errors
@@ -45,7 +50,7 @@ public class CommsService: ICommsService
         using var mail = new MailMessage(fromAddress, toAddress)
         {
             Subject = "Budget Update from CrazyBudget",
-            Body = model.Message ?? "Hello, this is a test email sent from the CrazyBudget C# application.",
+            Body = model.Message,
             IsBodyHtml = false
         };
 

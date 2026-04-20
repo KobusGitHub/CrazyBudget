@@ -34,6 +34,7 @@ builder.Services.AddScoped<IAuthenticateUserService, AuthenticateUserService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ICommsService, CommsService>();
+builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
 
 
 
