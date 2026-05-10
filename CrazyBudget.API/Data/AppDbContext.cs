@@ -16,6 +16,9 @@ namespace CrazyBudget.API.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<UserLogin> UserLogins { get; set; }
+        public DbSet<SmsExpense> SmsExpenses { get; set; }
+        public DbSet<Expense> Expenses { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

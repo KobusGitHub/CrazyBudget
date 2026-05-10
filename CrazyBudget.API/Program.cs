@@ -3,6 +3,7 @@ using System.Text;
 using CrazyBudget.API.Interfaces;
 using CrazyBudget.API.Options;
 using CrazyBudget.API.Services.Auth;
+using CrazyBudget.API.Services.Categories;
 using CrazyBudget.API.Services.Common;
 using CrazyBudget.API.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,6 +36,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ICommsService, CommsService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 
 
