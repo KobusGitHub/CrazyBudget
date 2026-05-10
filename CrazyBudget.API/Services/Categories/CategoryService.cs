@@ -76,7 +76,7 @@ public class CategoryService: ICategoryService
 
     public async Task<CategoryModel> GetCategoryById(int id)
     {
-        var ent = this.dbContext.Categories.FirstOrDefault(x => x.Id == id && x.UserId == this.currentUserService.UserId);
+        var ent = this.dbContext.Categories.FirstOrDefault(x => x.Id == id && !x.IsDeleted && x.UserId == this.currentUserService.UserId);
         if (ent == null)
         {
             throw new ArgumentException("Category not found");
